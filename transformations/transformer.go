@@ -35,11 +35,13 @@ type PointResult struct {
 
 // Transform output type
 type TransformerOutput struct {
-	csPath       []string
-	hsPath       []string
+	csPath       map[string][]string
+	hsPath       map[string][]string
 	includesGrid bool
 	ics          string
 	ihs          string
+	ocs          string
+	ohs          string
 	points       map[int]PointResult
 }
 
@@ -56,83 +58,135 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 	// Get base cs
 	from := t.ics
 
-	// Iterate over CS transformation path
-	for _, to := range t.csPath {
+	// Iterate points
+	for key, pt := range t.points {
 
-		// Get CS trasnformation parameters
-		zones, ok := Repo.CSGraph.Get(from, to)
-		if !ok {
-			return nil, errors.ErrUnsupported
+		// Store intermediate results
+		type IntRes struct {
+			CS string
+			X  float64
+			Y  float64
 		}
 
-		// Update from
-		from = to
+		// Track walk nodes
+		fromNodes := []IntRes{
+			{
+				CS: t.ics,
+				X:  pt.X,
+				Y:  pt.Y,
+			},
+		}
 
-		// Iterate over points
-		for _, pt := range t.points {
+		// Store results
+		res := map[string][2]float64{}
 
-			// Store BGS if needed
-			if t.includesGrid && t.ics == "bgs-cad" {
-				pt.Xbgs = pt.X
-				pt.Ybgs = pt.Y
-			}
+		// Walk the graph
+		for len(fromNodes) > 0 {
 
-			// Track if point is transformed
-			transformed := false
+			nextNodes := []IntRes{}
 
-			// Iterate over zones
-			for _, zone := range zones {
+			// Iterate nodes
+			for _, node := range fromNodes {
 
-				// Check if point is in zone
-				if !zone.InZone(pt.X, pt.Y) {
+				// If current node is of interest, store values
+				if node.CS == t.ocs {
+					res[t.ocs] = [2]float64{node.X, node.Y}
+				}
+				if t.includesGrid && node.CS == "bgs-cad" {
+					res["bgs-cad"] = [2]float64{node.X, node.Y}
+				}
+
+				// Find connections
+				connections, found := t.csPath[node.CS]
+
+				// If no connections, continue
+				if !found {
 					continue
 				}
 
-				// Helper values
-				dx := pt.X - zone.X0
-				dy := pt.Y - zone.Y0
+				// Iterate connections
+				for _, to := range connections {
 
-				// Transform point
-				pt.X = zone.A00 +
-					zone.A10*dx +
-					zone.A01*dy +
-					zone.A20*dx*dx +
-					zone.A11*dx*dy +
-					zone.A02*dy*dy +
-					zone.A30*dx*dx*dx +
-					zone.A21*dx*dx*dy +
-					zone.A12*dx*dy*dy +
-					zone.A03*dy*dy*dy
-				pt.Y = zone.B00 +
-					zone.B10*dx +
-					zone.B01*dy +
-					zone.B20*dx*dx +
-					zone.B11*dx*dy +
-					zone.B02*dy*dy +
-					zone.B30*dx*dx*dx +
-					zone.B21*dx*dx*dy +
-					zone.B12*dx*dy*dy +
-					zone.B03*dy*dy*dy
+					// Create next node
+					nextNode := IntRes{
+						CS: to,
+						X:  node.X,
+						Y:  node.Y,
+					}
 
-				// Mark as tranformed
-				transformed = true
+					// Get CS trasnformation parameters
+					zones, ok := Repo.CSGraph.Get(from, to)
+					if !ok {
+						return nil, errors.ErrUnsupported
+					}
 
-				// Store BGS if needed
-				if t.includesGrid && from == "bgs-cad" {
-					pt.Xbgs = pt.X
-					pt.Ybgs = pt.Y
+					// Track if point is transformed
+					transformed := false
+
+					// Iterate over zones
+					for _, zone := range zones {
+
+						// Check if point is in zone
+						if !zone.InZone(nextNode.X, nextNode.Y) {
+							continue
+						}
+
+						// Helper values
+						dx := nextNode.X - zone.X0
+						dy := nextNode.Y - zone.Y0
+
+						// Transform point
+						nextNode.X = zone.A00 +
+							zone.A10*dx +
+							zone.A01*dy +
+							zone.A20*dx*dx +
+							zone.A11*dx*dy +
+							zone.A02*dy*dy +
+							zone.A30*dx*dx*dx +
+							zone.A21*dx*dx*dy +
+							zone.A12*dx*dy*dy +
+							zone.A03*dy*dy*dy
+						nextNode.Y = zone.B00 +
+							zone.B10*dx +
+							zone.B01*dy +
+							zone.B20*dx*dx +
+							zone.B11*dx*dy +
+							zone.B02*dy*dy +
+							zone.B30*dx*dx*dx +
+							zone.B21*dx*dx*dy +
+							zone.B12*dx*dy*dy +
+							zone.B03*dy*dy*dy
+
+						// Mark as tranformed
+						transformed = true
+
+						// Exit loop
+						break
+					}
+
+					// Return error if not transformed
+					// TODO: need better errors
+					if !transformed {
+						return nil, errors.New("point out of bounds")
+					}
+
+					// Add next node
+					nextNodes = append(nextNodes, nextNode)
 				}
-
-				// Exit loop
-				break
 			}
 
-			// Return error if not transformed
-			// TODO: need better errors
-			if !transformed {
-				return nil, errors.New("point out of bounds")
-			}
+			// Update from nodes
+			fromNodes = nextNodes
 		}
+
+		// Update point coordinates
+		pt.X = res[t.ocs][0]
+		pt.Y = res[t.ocs][1]
+		if t.includesGrid {
+			pt.Xbgs = res["bgs-cad"][0]
+			pt.Ybgs = res["bgs-cad"][1]
+		}
+		t.points[key] = pt
 	}
 
 	// Get base hs
@@ -142,13 +196,13 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 	for _, to := range t.hsPath {
 
 		// Get CS trasnformation parameters
-		params, ok := Repo.HSGraph.Get(from, to)
+		params, ok := Repo.HSGraph.Get(from, to[0])
 		if !ok {
 			return nil, errors.ErrUnsupported
 		}
 
 		// Update from
-		from = to
+		from = to[0]
 
 		// If grid type
 		if params.Type == "grid" {
@@ -171,7 +225,7 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 				}
 
 				// Build vertex name
-				name := makeOndulationVertexNameFromXY(gridParams, pt.X, pt.Y)
+				name := makeOndulationVertexNameFromXY(gridParams, pt.Xbgs, pt.Ybgs)
 
 				// Add to points
 				verticesList = append(verticesList, name)
@@ -246,7 +300,7 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 			}
 
 			// Iterate over points
-			for _, pt := range t.points {
+			for key, pt := range t.points {
 
 				// Get height
 				hr, err := gridInterpolation(gridParams, pt.Xbgs, pt.Ybgs, pt.H, params.Direction, vertices)
@@ -256,6 +310,7 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 
 				// Update H
 				pt.H = hr
+				t.points[key] = pt
 			}
 
 			// Continue
@@ -271,16 +326,17 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 			}
 
 			// Iterate over points
-			for _, pt := range t.points {
+			for key, pt := range t.points {
 
 				// Get height
-				hr, err := planeInterpolation(planeParams, pt.Xbgs, pt.Ybgs, pt.H, params.Direction)
+				hr, err := planeInterpolation(planeParams, pt.X, pt.Y, pt.H, params.Direction)
 				if err != nil {
 					return nil, err
 				}
 
 				// Update H
 				pt.H = hr
+				t.points[key] = pt
 			}
 
 			// Continue

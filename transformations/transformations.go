@@ -63,7 +63,10 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 	hsTargets[ohs] = false
 
 	// Find path from input HS to output HS
-	hsPath := getPath(Repo.HSGraph.data, ihs, hsTargets, []string{})
+	hsPath, found := findPathGraph(Repo.HSGraph.data, ihs, [2]string{ohs})
+	if !found {
+		return nil, fmt.Errorf("Can't convert from %s to %s", ihs, ohs)
+	}
 
 	// Check if a grid transformation is in the path
 	storeBgs := false
@@ -71,17 +74,27 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 	// Get first system
 	from := ihs
 
-	// Iterate over hsPath
-	for _, to := range hsPath {
+	// Traverse graph
+	for {
+
+		// Get node
+		to, ok := hsPath[from]
+
+		// Exit if not found
+		if !ok {
+			break
+		}
 
 		// Get params
-		params, _ := Repo.HSGraph.Get(from, to)
+		params, _ := Repo.HSGraph.Get(from, to[0])
 
-		// Update from
-		from = to
-
-		// If params are not grid base, continue
+		// If params are not grid base
 		if params.Name != "grid" {
+
+			// Update from
+			from = to[0]
+
+			// Continue
 			continue
 		}
 
@@ -93,16 +106,18 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 	}
 
 	// Set cs transformation targets
-	csTargets := make(map[string]bool)
-	csTargets[ocs] = false
+	csTargets := [2]string{ocs}
 
 	// Add bgs if needed
 	if storeBgs {
-		csTargets["bgs-cad"] = false
+		csTargets[1] = "bgs-cad"
 	}
 
 	// Find path from input CS to output CS, going trough BGS if needed
-	csPath := getPath(Repo.CSGraph.data, ics, csTargets, []string{})
+	csPath, found := findPathGraph(Repo.CSGraph.data, ics, csTargets)
+	if !found {
+		return nil, fmt.Errorf("Can't convert from %s to %s", ics, ocs)
+	}
 
 	return &TransformerOutput{
 		csPath:       csPath,
@@ -110,5 +125,7 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 		includesGrid: storeBgs,
 		ics:          ics,
 		ihs:          ihs,
+		ocs:          ocs,
+		ohs:          ohs,
 	}, nil
 }
