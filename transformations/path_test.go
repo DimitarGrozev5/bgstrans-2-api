@@ -22,9 +22,9 @@ var mockPathState config.App = config.App{
 	ValidCSs: []string{"cs1", "cs2"},
 	ValidHSs: []string{"hs1", "hs2"},
 	CsGraph: map[string]map[string][]config.CSTransformation{
-		"cs1": map[string][]config.CSTransformation{
+		"cs1": {
 			"cs2": []config.CSTransformation{
-				config.CSTransformation{
+				{
 					Border: []struct {
 						X float64 `yaml:"X"`
 						Y float64 `yaml:"Y"`
@@ -34,78 +34,38 @@ var mockPathState config.App = config.App{
 						{10, 10},
 						{10, 0},
 					},
-					X0:  0,
-					Y0:  0,
-					A00: 0,
-					A10: 0,
-					A01: 0,
-					A20: 0,
-					A11: 0,
-					A02: 0,
-					A30: 0,
-					A21: 0,
-					A12: 0,
-					A03: 0,
-					B00: 0,
-					B10: 0,
-					B01: 0,
-					B20: 0,
-					B11: 0,
-					B02: 0,
-					B30: 0,
-					B21: 0,
-					B12: 0,
-					B03: 0,
+					X0: 10,
+					Y0: 10,
 				},
 			},
 		},
-		"cs2": map[string][]config.CSTransformation{
+		"cs2": {
 			"cs1": []config.CSTransformation{
-				config.CSTransformation{
+				{
 					Border: []struct {
 						X float64 `yaml:"X"`
 						Y float64 `yaml:"Y"`
 					}{
-						{0, 0},
-						{0, 10},
 						{10, 10},
-						{10, 0},
+						{10, 20},
+						{20, 20},
+						{20, 10},
 					},
-					X0:  0,
-					Y0:  0,
-					A00: 0,
-					A10: 0,
-					A01: 0,
-					A20: 0,
-					A11: 0,
-					A02: 0,
-					A30: 0,
-					A21: 0,
-					A12: 0,
-					A03: 0,
-					B00: 0,
-					B10: 0,
-					B01: 0,
-					B20: 0,
-					B11: 0,
-					B02: 0,
-					B30: 0,
-					B21: 0,
-					B12: 0,
-					B03: 0,
+					X0: -10,
+					Y0: -10,
 				},
 			},
 		},
 	},
 	HsGraph: map[string]map[string]config.HSTransformation{
-		"hs1": map[string]config.HSTransformation{
+		"hs1": {
 			"hs2": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr12",
 				Direction: 1,
 			},
 		},
-		"hs2": map[string]config.HSTransformation{
+		"hs2": {
 			"hs1": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr12",
@@ -122,7 +82,7 @@ var mockPathState config.App = config.App{
 				Direction: 1,
 			},
 		},
-		"hs3": map[string]config.HSTransformation{
+		"hs3": {
 			"hs2": config.HSTransformation{
 				Type:      "grid",
 				Name:      "gtr23",
@@ -134,7 +94,7 @@ var mockPathState config.App = config.App{
 				Direction: 1,
 			},
 		},
-		"hs4": map[string]config.HSTransformation{
+		"hs4": {
 			"hs2": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr24",
@@ -146,14 +106,14 @@ var mockPathState config.App = config.App{
 				Direction: 1,
 			},
 		},
-		"hs5": map[string]config.HSTransformation{
+		"hs5": {
 			"hs7": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr57",
 				Direction: 1,
 			},
 		},
-		"hs6": map[string]config.HSTransformation{
+		"hs6": {
 			"hs3": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr36",
@@ -165,7 +125,7 @@ var mockPathState config.App = config.App{
 				Direction: 1,
 			},
 		},
-		"hs7": map[string]config.HSTransformation{
+		"hs7": {
 			"hs4": config.HSTransformation{
 				Type:      "plane",
 				Name:      "ptr47",
