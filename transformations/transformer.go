@@ -81,6 +81,7 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 		res := map[string][2]float64{}
 
 		// Walk the graph
+	graphLoop:
 		for len(fromNodes) > 0 {
 
 			nextNodes := []IntRes{}
@@ -165,9 +166,9 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 					}
 
 					// Return error if not transformed
-					// TODO: need better errors
 					if !transformed {
-						return nil, errors.New("point out of bounds")
+						pt.XYErr = "point out of transformation bounds"
+						break graphLoop
 					}
 
 					// Add next node
@@ -177,6 +178,16 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 
 			// Update from nodes
 			fromNodes = nextNodes
+		}
+
+		// If there is a transformation error
+		if len(pt.XYErr) > 0 {
+
+			// Update point
+			t.points[key] = pt
+
+			// Continue to next point
+			continue
 		}
 
 		// Update point coordinates
@@ -219,8 +230,8 @@ func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
 			// Iterate over points
 			for _, pt := range t.points {
 
-				// Skip if H is missing
-				if !pt.HasH {
+				// Skip if H is missing or if there is a XY err
+				if !(pt.HasH && len(pt.XYErr) == 0) {
 					continue
 				}
 

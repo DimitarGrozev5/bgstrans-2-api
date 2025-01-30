@@ -65,7 +65,7 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 	// Find path from input HS to output HS
 	hsPath, found := findPathGraph(Repo.HSGraph.data, ihs, [2]string{ohs})
 	if !found {
-		return nil, fmt.Errorf("Can't convert from %s to %s", ihs, ohs)
+		return nil, fmt.Errorf("can't convert from %s to %s", ihs, ohs)
 	}
 
 	// Check if a grid transformation is in the path
@@ -116,7 +116,7 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 	// Find path from input CS to output CS, going trough BGS if needed
 	csPath, found := findPathGraph(Repo.CSGraph.data, ics, csTargets)
 	if !found {
-		return nil, fmt.Errorf("Can't convert from %s to %s", ics, ocs)
+		return nil, fmt.Errorf("can't convert from %s to %s", ics, ocs)
 	}
 
 	return &TransformerOutput{
