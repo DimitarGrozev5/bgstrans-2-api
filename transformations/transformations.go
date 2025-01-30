@@ -127,5 +127,6 @@ func GetTransformer(ics, ocs, ihs, ohs string) (Transformer, error) {
 		ihs:          ihs,
 		ocs:          ocs,
 		ohs:          ohs,
+		points:       make(map[int]PointResult),
 	}, nil
 }
