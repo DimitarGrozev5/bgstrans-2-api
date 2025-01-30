@@ -82,7 +82,11 @@ func main() {
 			// Store comment/point name
 			if len(line) == 1 || len(line) > 2 {
 				o.Name = line[0]
-				continue
+
+				// Exit if only comment
+				if len(line) == 1 {
+					continue
+				}
 			}
 
 			// Continue if len is less than 3
@@ -254,5 +258,5 @@ type TransfomrationRequest struct {
 
 // Transformation response format
 type TransformationResponse struct {
-	Data [][]string `json:"data"`
+	Data [][]string `json:"d"`
 }
