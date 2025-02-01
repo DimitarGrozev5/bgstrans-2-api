@@ -11,8 +11,8 @@ import (
 
 // Transformer interface
 type Transformer interface {
-	Add(id int, pt PointResult)
-	TransformBatch() (map[int]PointResult, error)
+	Add(id int, pt *PointResult)
+	TransformBatch() (map[int]*PointResult, error)
 }
 
 // Store transformation intermediate steps
@@ -42,18 +42,18 @@ type TransformerOutput struct {
 	ihs          string
 	ocs          string
 	ohs          string
-	points       map[int]PointResult
+	points       map[int]*PointResult
 }
 
 // Add points to transformation batch
-func (t *TransformerOutput) Add(id int, pt PointResult) {
+func (t *TransformerOutput) Add(id int, pt *PointResult) {
 
 	// Add point to batch
 	t.points[id] = pt
 }
 
 // Trasnform batch
-func (t *TransformerOutput) TransformBatch() (map[int]PointResult, error) {
+func (t *TransformerOutput) TransformBatch() (map[int]*PointResult, error) {
 
 	// Get base cs
 	from := t.ics

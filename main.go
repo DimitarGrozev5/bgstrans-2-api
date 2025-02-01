@@ -65,14 +65,16 @@ func main() {
 		}
 
 		// Store output
-		results := map[int]transformations.PointResult{}
+		results := map[int]*transformations.PointResult{}
 
 		// Iterate over data
 		for i, line := range data.Data {
 
+			fmt.Println(line)
+
 			// Store output for current line
 			var o transformations.PointResult
-			results[i] = o
+			results[i] = &o
 
 			// Add empty line
 			if len(line) == 0 {
@@ -137,7 +139,7 @@ func main() {
 			}
 
 			// Add point for tranformation
-			transformer.Add(i, o)
+			transformer.Add(i, &o)
 		}
 
 		// Transform data
